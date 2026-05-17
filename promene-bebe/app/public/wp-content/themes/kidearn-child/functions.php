@@ -71,53 +71,57 @@ add_action( 'after_setup_theme', 'promenebebe_theme_supports', 20 );
  * ============================================================= */
 
 /**
- * Charge le style parent puis le style enfant + main.css + theme.js.
+ * Stratégie assets — on s'appuie sur le thème parent.
  *
- * Ordre voulu :
- *   1. Polices Google (preconnect + preload + chargement)
- *   2. Style parent Kidearn (préservé)
- *   3. style.css enfant (header seulement, dépend du parent)
- *   4. main.css enfant (palette + composants Promène Bébé)
- *   5. theme.js (mode sombre, footer + defer)
+ * Kidearn enqueue lui-même :
+ *   - kidearn-fonts    (DM Sans + Fredoka + Schoolbell, via fonts.googleapis.com)
+ *   - flaticons / kidearn-icons / fontawesome
+ *   - bootstrap (grille + utilitaires)
+ *   - kidearn-style    (handle qui pointe en réalité vers le style.css ENFANT,
+ *                       car Kidearn utilise get_stylesheet_uri() au lieu de
+ *                       get_template_directory_uri() — bug connu de Kidearn)
+ *
+ * Il en résulte que le style.css RÉEL du parent (24 000 lignes, la matière
+ * première du design Kidearn) n'est PAS chargé tant qu'on ne le re-enqueue
+ * pas explicitement. C'est ce que fait `promenebebe_enqueue_assets`.
+ *
+ * On ajoute ensuite :
+ *   - Inter (police de corps Promène Bébé, en complément de Fredoka pour les titres)
+ *   - main.css enfant (overrides des CSS custom-properties Kidearn + composants PB)
+ *   - theme.js + ui.js (mode sombre, slider hero, sommaire auto, etc.)
  */
 function promenebebe_enqueue_assets() {
 
-    // --- Polices Google Fonts -------------------------------------
-    // Preconnect pour réduire la latence DNS/TLS sur fonts.googleapis.com
+    /* Preconnect Google Fonts (le parent charge déjà la URL fonts.googleapis.com,
+       on s'aligne pour profiter du même preconnect). */
     add_filter( 'wp_resource_hints', 'promenebebe_resource_hints', 10, 2 );
 
+    /* Police Inter (corps Promène Bébé, en complément des polices Kidearn). */
     wp_enqueue_style(
         'promenebebe-fonts',
-        'https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap',
+        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
         array(),
-        null  /* pas de querystring de version sur une URL externe avec hash */
+        null
     );
 
-    // --- Styles parent (conservé tel quel) ------------------------
+    /* Le style.css RÉEL du parent Kidearn (que parent's functions.php ne
+       charge pas correctement à cause d'un get_stylesheet_uri mal placé). */
     wp_enqueue_style(
         'kidearn-parent-style',
         get_template_directory_uri() . '/style.css',
-        array( 'kidearn-fonts', 'kidearn-icons', 'bootstrap', 'fontawesome' ),
-        PROMENEBEBE_VERSION
+        array( 'kidearn-fonts' ),
+        '1.2'
     );
 
-    // --- style.css enfant (header WordPress seulement) ------------
-    wp_enqueue_style(
-        'promenebebe-child-style',
-        get_stylesheet_directory_uri() . '/style.css',
-        array( 'kidearn-parent-style' ),
-        PROMENEBEBE_VERSION
-    );
-
-    // --- main.css enfant (palette + composants) -------------------
+    /* main.css enfant — overrides palette PB + composants spécifiques. */
     wp_enqueue_style(
         'promenebebe-main',
         PROMENEBEBE_CHILD_URI . '/assets/css/main.css',
-        array( 'promenebebe-child-style', 'promenebebe-fonts' ),
+        array( 'kidearn-parent-style', 'promenebebe-fonts' ),
         PROMENEBEBE_VERSION
     );
 
-    // --- Script principal (mode sombre, etc.) ---------------------
+    /* JS : mode sombre + composants UI Promène Bébé. */
     wp_enqueue_script(
         'promenebebe-theme',
         PROMENEBEBE_CHILD_URI . '/assets/js/theme.js',
@@ -125,8 +129,6 @@ function promenebebe_enqueue_assets() {
         PROMENEBEBE_VERSION,
         array( 'in_footer' => true, 'strategy' => 'defer' )
     );
-
-    // --- Interactions UI (slider, recherche, menu mobile) ----------
     wp_enqueue_script(
         'promenebebe-ui',
         PROMENEBEBE_CHILD_URI . '/assets/js/ui.js',
@@ -298,16 +300,16 @@ function promenebebe_reading_time( $post_id = null ) {
 }
 
 /**
- * Marqueur HTML pour le toggle mode sombre (à insérer dans header.php).
+ * Bascule mode sombre — bouton flottant (FAB) injecté automatiquement.
  *
- * Usage dans un template :
- *   echo promenebebe_theme_toggle_html();
+ * Le parent Kidearn fournit son propre header. Plutôt que de l'altérer,
+ * on injecte un bouton flottant en bas à droite (CSS `.pb-theme-toggle`),
+ * actionné par theme.js via `[data-pb-theme-toggle]`.
  */
-function promenebebe_theme_toggle_html() {
-    ob_start();
+function promenebebe_render_theme_toggle() {
     ?>
     <button type="button"
-            class="pb-iconbtn"
+            class="pb-theme-toggle"
             data-pb-theme-toggle
             aria-pressed="false"
             aria-label="<?php esc_attr_e( 'Activer le mode sombre', 'promenebebe' ); ?>">
@@ -317,5 +319,5 @@ function promenebebe_theme_toggle_html() {
         </svg>
     </button>
     <?php
-    return ob_get_clean();
 }
+add_action( 'wp_footer', 'promenebebe_render_theme_toggle', 5 );

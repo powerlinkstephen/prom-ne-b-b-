@@ -2,9 +2,10 @@
 /**
  * Carte article — Promène Bébé.
  *
- * Affiche un article au format carte (image, catégorie, titre, extrait,
- * temps de lecture, date). Utilisée par les grilles (home, archives,
- * articles similaires).
+ * Utilise la structure de carte native de Kidearn (.blog-card.blog-card-two)
+ * pour bénéficier automatiquement de l'ensemble du styling parent
+ * (image hover en couches, badge catégorie, transitions, etc.), recolorisé
+ * via les CSS custom-properties surchargées dans assets/css/main.css.
  *
  * @package PromeneBebe
  */
@@ -13,53 +14,58 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-$categories = get_the_category();
-$primary_cat = ! empty( $categories ) ? $categories[0] : null;
-$reading_min = promenebebe_reading_time( get_the_ID() );
+$pb_cats        = get_the_category();
+$pb_primary_cat = ! empty( $pb_cats ) ? $pb_cats[0] : null;
+$pb_thumb_url   = get_the_post_thumbnail_url( null, 'kidearn_blog_770X449' );
 ?>
-<article id="post-<?php the_ID(); ?>" <?php post_class( 'pb-card' ); ?>>
-    <a class="pb-card__media" href="<?php the_permalink(); ?>" aria-hidden="true" tabindex="-1">
+<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+    <div class="blog-card blog-card-two wow fadeInUp" data-wow-duration="1500ms" data-wow-delay="000ms">
         <?php if ( has_post_thumbnail() ) : ?>
-            <?php the_post_thumbnail( 'medium_large', array(
-                'loading'  => 'lazy',
-                'decoding' => 'async',
-                'alt'      => esc_attr( get_the_title() ),
-            ) ); ?>
-        <?php else : ?>
-            <img src="<?php echo esc_url( promenebebe_asset( 'img/logo.png' ) ); ?>"
-                 alt="" loading="lazy" decoding="async">
+            <div class="blog-card__image">
+                <?php the_post_thumbnail( 'kidearn_blog_770X449', array(
+                    'loading'  => 'lazy',
+                    'decoding' => 'async',
+                    'alt'      => esc_attr( get_the_title() ),
+                ) ); ?>
+                <?php if ( $pb_thumb_url ) : ?>
+                    <div class="blog-card__image__layer" style="background-image: url(<?php echo esc_url( $pb_thumb_url ); ?>);"></div>
+                    <div class="blog-card__image__layer" style="background-image: url(<?php echo esc_url( $pb_thumb_url ); ?>);"></div>
+                    <div class="blog-card__image__layer" style="background-image: url(<?php echo esc_url( $pb_thumb_url ); ?>);"></div>
+                    <div class="blog-card__image__layer" style="background-image: url(<?php echo esc_url( $pb_thumb_url ); ?>);"></div>
+                <?php endif; ?>
+                <a href="<?php the_permalink(); ?>" class="blog-card__image__link">
+                    <span class="screen-reader-text"><?php the_title(); ?></span>
+                </a>
+            </div>
         <?php endif; ?>
-    </a>
 
-    <div class="pb-card__body">
-        <?php if ( $primary_cat ) : ?>
-            <a class="pb-card__category" href="<?php echo esc_url( get_category_link( $primary_cat->term_id ) ); ?>">
-                <?php echo esc_html( $primary_cat->name ); ?>
-            </a>
-        <?php endif; ?>
+        <div class="blog-card__content">
+            <div class="blog-card__content__top">
+                <?php if ( $pb_primary_cat ) : ?>
+                    <a class="blog-card__category" href="<?php echo esc_url( get_category_link( $pb_primary_cat->term_id ) ); ?>">
+                        <?php echo esc_html( $pb_primary_cat->name ); ?>
+                    </a>
+                <?php endif; ?>
+                <div class="blog-card__date">
+                    <i class="fa fa-clock" aria-hidden="true"></i>
+                    <?php echo esc_html( get_the_date() ); ?>
+                </div>
+            </div>
 
-        <h3 class="pb-card__title">
-            <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-        </h3>
+            <h3 class="blog-card__title">
+                <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+            </h3>
 
-        <div class="pb-card__excerpt">
-            <?php echo wp_kses_post( wp_trim_words( get_the_excerpt(), 24, '…' ) ); ?>
+            <p class="blog-card-two__text">
+                <?php echo esc_html( wp_trim_words( get_the_excerpt(), 22, '…' ) ); ?>
+            </p>
+
+            <div class="blog-card__content__bottom">
+                <a href="<?php the_permalink(); ?>" class="blog-card__link" aria-label="<?php esc_attr_e( 'Lire l\'article', 'promenebebe' ); ?>">
+                    <span class="screen-reader-text"><?php esc_html_e( 'Lire l\'article', 'promenebebe' ); ?></span>
+                    <i class="fa fa-arrow-right" aria-hidden="true"></i>
+                </a>
+            </div>
         </div>
-
-        <footer class="pb-card__meta">
-            <time datetime="<?php echo esc_attr( get_the_date( 'c' ) ); ?>">
-                <?php echo esc_html( get_the_date() ); ?>
-            </time>
-            <span aria-hidden="true">·</span>
-            <span>
-                <?php
-                printf(
-                    /* translators: %d : nombre de minutes */
-                    esc_html( _n( '%d min de lecture', '%d min de lecture', $reading_min, 'promenebebe' ) ),
-                    (int) $reading_min
-                );
-                ?>
-            </span>
-        </footer>
     </div>
 </article>

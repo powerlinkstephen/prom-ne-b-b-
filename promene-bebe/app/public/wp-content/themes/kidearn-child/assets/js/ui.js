@@ -1,5 +1,9 @@
 /**
- * Promène Bébé — interactions UI (hero slider, recherche, menu mobile).
+ * Promène Bébé — interactions UI.
+ *
+ * 1. Hero slider scroll-snap (front-page.php)
+ * 2. Sommaire automatique d'article (single.php)
+ * 3. Injection d'une icône de recherche dans le header Kidearn + overlay
  *
  * Pas de dépendance externe. Vanilla JS, défère.
  */
@@ -9,32 +13,29 @@
 
     var SVG_NS = 'http://www.w3.org/2000/svg';
 
-    /**
-     * Crée un élément SVG avec attributs et enfants <line> simples.
-     * @param {{viewBox: string, lines: Array<[number,number,number,number]>}} spec
-     */
-    function makeSvgIcon(spec) {
+    /* =========================================================
+     * Utilitaires SVG
+     * ========================================================= */
+    function makeSvg(viewBox, children) {
         var svg = document.createElementNS(SVG_NS, 'svg');
         svg.setAttribute('aria-hidden', 'true');
-        svg.setAttribute('viewBox', spec.viewBox);
+        svg.setAttribute('viewBox', viewBox);
         svg.setAttribute('fill', 'none');
         svg.setAttribute('stroke', 'currentColor');
         svg.setAttribute('stroke-width', '2');
         svg.setAttribute('stroke-linecap', 'round');
         svg.setAttribute('stroke-linejoin', 'round');
-        (spec.lines || []).forEach(function (coords) {
-            var line = document.createElementNS(SVG_NS, 'line');
-            line.setAttribute('x1', String(coords[0]));
-            line.setAttribute('y1', String(coords[1]));
-            line.setAttribute('x2', String(coords[2]));
-            line.setAttribute('y2', String(coords[3]));
-            svg.appendChild(line);
-        });
+        (children || []).forEach(function (c) { svg.appendChild(c); });
         return svg;
+    }
+    function svgEl(tag, attrs) {
+        var el = document.createElementNS(SVG_NS, tag);
+        Object.keys(attrs || {}).forEach(function (k) { el.setAttribute(k, String(attrs[k])); });
+        return el;
     }
 
     /* =========================================================
-     * 1. HERO SLIDER (scroll-snap + boutons + dots)
+     * 1. HERO SLIDER
      * ========================================================= */
     function initSlider(root) {
         var track    = root.querySelector('[data-pb-slider-track]');
@@ -62,7 +63,6 @@
             current = idx;
             updateUI();
         }
-
         function updateUI() {
             if (prevBtn) prevBtn.disabled = current === 0;
             if (nextBtn) nextBtn.disabled = current === slides.length - 1;
@@ -81,7 +81,6 @@
             });
         });
 
-        /* Détection de la diapositive courante quand l'utilisateur scrolle (tactile, trackpad). */
         var scrollTimeout = null;
         track.addEventListener('scroll', function () {
             if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
@@ -98,7 +97,6 @@
             });
         }, { passive: true });
 
-        /* Navigation clavier : ←/→ */
         root.addEventListener('keydown', function (e) {
             if (e.target.closest('input, textarea, button, a')) return;
             if (e.key === 'ArrowLeft')  { scrollToIndex(current - 1); e.preventDefault(); }
@@ -109,100 +107,7 @@
     }
 
     /* =========================================================
-     * 2. RECHERCHE TOGGLE
-     * ========================================================= */
-    function initSearchToggle() {
-        var toggle = document.querySelector('[data-pb-search-toggle]');
-        var panel  = document.getElementById('pb-search');
-        if (!toggle || !panel) return;
-
-        toggle.addEventListener('click', function () {
-            var isOpen = !panel.hidden;
-            panel.hidden = isOpen;
-            toggle.setAttribute('aria-expanded', String(!isOpen));
-            if (!isOpen) {
-                var input = panel.querySelector('input[type="search"]');
-                if (input) input.focus();
-            }
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && !panel.hidden) {
-                panel.hidden = true;
-                toggle.setAttribute('aria-expanded', 'false');
-                toggle.focus();
-            }
-        });
-    }
-
-    /* =========================================================
-     * 3. MENU MOBILE (drawer)
-     * ========================================================= */
-    function initMobileMenu() {
-        var toggle = document.querySelector('[data-pb-menu-toggle]');
-        if (!toggle) return;
-
-        var sourceNav = document.querySelector('.pb-header__nav');
-        if (!sourceNav) return;
-
-        var drawer = document.createElement('aside');
-        drawer.id = 'pb-mobile-menu';
-        drawer.className = 'pb-mobile-menu';
-        drawer.setAttribute('aria-hidden', 'true');
-        drawer.setAttribute('aria-label', 'Menu de navigation');
-
-        var closeBtn = document.createElement('button');
-        closeBtn.type = 'button';
-        closeBtn.className = 'pb-iconbtn pb-mobile-menu__close';
-        closeBtn.setAttribute('aria-label', 'Fermer le menu');
-        closeBtn.appendChild(makeSvgIcon({
-            viewBox: '0 0 24 24',
-            lines: [
-                [18, 6, 6, 18],
-                [6,  6, 18, 18]
-            ]
-        }));
-        drawer.appendChild(closeBtn);
-
-        var nav = sourceNav.cloneNode(true);
-        nav.removeAttribute('aria-label');
-        drawer.appendChild(nav);
-
-        var backdrop = document.createElement('div');
-        backdrop.className = 'pb-backdrop';
-
-        document.body.appendChild(backdrop);
-        document.body.appendChild(drawer);
-
-        function open() {
-            drawer.setAttribute('aria-hidden', 'false');
-            backdrop.setAttribute('data-visible', 'true');
-            toggle.setAttribute('aria-expanded', 'true');
-            document.body.style.overflow = 'hidden';
-            closeBtn.focus();
-        }
-        function close() {
-            drawer.setAttribute('aria-hidden', 'true');
-            backdrop.removeAttribute('data-visible');
-            toggle.setAttribute('aria-expanded', 'false');
-            document.body.style.overflow = '';
-            toggle.focus();
-        }
-
-        toggle.addEventListener('click', open);
-        closeBtn.addEventListener('click', close);
-        backdrop.addEventListener('click', close);
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && drawer.getAttribute('aria-hidden') === 'false') close();
-        });
-    }
-
-    /* =========================================================
-     * 4. SOMMAIRE AUTOMATIQUE (TOC)
-     *
-     * Construit dynamiquement à partir des H2/H3 du corps d'article.
-     * Ajoute des IDs stables aux titres, peuple [data-pb-toc-list],
-     * met en évidence le titre courant avec IntersectionObserver.
+     * 2. SOMMAIRE AUTOMATIQUE
      * ========================================================= */
     function slugify(str) {
         return String(str || '')
@@ -212,7 +117,6 @@
             .replace(/^-+|-+$/g, '')
             .slice(0, 80) || 'section';
     }
-
     function ensureUniqueId(el, used) {
         var base = el.id || slugify(el.textContent);
         var id   = base;
@@ -222,7 +126,6 @@
         el.id = id;
         return id;
     }
-
     function initToc() {
         var body = document.querySelector('[data-pb-article-body]');
         var list = document.querySelector('[data-pb-toc-list]');
@@ -235,31 +138,24 @@
             return;
         }
 
-        list.textContent = ''; /* retire le placeholder */
+        list.textContent = '';
         var used = {};
-
         headings.forEach(function (h) {
             ensureUniqueId(h, used);
-
             var li = document.createElement('li');
             if (h.tagName === 'H3') li.classList.add('pb-toc__sub');
-
             var a  = document.createElement('a');
             a.href = '#' + h.id;
             a.textContent = h.textContent;
             a.dataset.target = h.id;
-
             li.appendChild(a);
             list.appendChild(li);
         });
 
-        /* Scroll-spy : surligne le titre actif. */
         if (!('IntersectionObserver' in window)) return;
-
         var links = list.querySelectorAll('a[data-target]');
         var byId  = {};
         links.forEach(function (a) { byId[a.dataset.target] = a; });
-
         var observer = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 var link = byId[entry.target.id];
@@ -269,12 +165,98 @@
                     link.setAttribute('data-active', 'true');
                 }
             });
-        }, {
-            rootMargin: '-30% 0px -60% 0px',
-            threshold: 0
-        });
-
+        }, { rootMargin: '-30% 0px -60% 0px', threshold: 0 });
         headings.forEach(function (h) { observer.observe(h); });
+    }
+
+    /* =========================================================
+     * 3. INJECTION D'UNE RECHERCHE DANS LE HEADER KIDEARN
+     *
+     * Le header par défaut de Kidearn ne contient pas d'icône de recherche.
+     * On en ajoute une dans `.main-header__inner` qui ouvre un overlay
+     * plein écran avec un formulaire `<form action="/" ?s=…>`.
+     * ========================================================= */
+    function buildSearchIcon() {
+        return makeSvg('0 0 24 24', [
+            svgEl('circle', { cx: 11, cy: 11, r: 7 }),
+            svgEl('line', { x1: 21, y1: 21, x2: 16.65, y2: 16.65 })
+        ]);
+    }
+    function buildCloseIcon() {
+        return makeSvg('0 0 24 24', [
+            svgEl('line', { x1: 18, y1: 6,  x2: 6,  y2: 18 }),
+            svgEl('line', { x1: 6,  y1: 6,  x2: 18, y2: 18 })
+        ]);
+    }
+
+    function initSearch() {
+        var headerInner = document.querySelector('.main-header__inner, .main-header');
+        if (!headerInner) return;
+
+        /* Icône bouton */
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pb-search-trigger';
+        btn.setAttribute('aria-label', 'Ouvrir la recherche');
+        btn.appendChild(buildSearchIcon());
+        headerInner.appendChild(btn);
+
+        /* Overlay */
+        var overlay = document.createElement('div');
+        overlay.className = 'pb-search-overlay';
+        overlay.setAttribute('aria-hidden', 'true');
+
+        var form = document.createElement('form');
+        form.action = (window.location.origin || '') + '/';
+        form.method = 'get';
+        form.role = 'search';
+
+        var label = document.createElement('label');
+        label.className = 'pb-sr-only';
+        label.setAttribute('for', 'pb-search-input');
+        label.textContent = 'Rechercher sur Promène Bébé';
+
+        var input = document.createElement('input');
+        input.id = 'pb-search-input';
+        input.type = 'search';
+        input.name = 's';
+        input.placeholder = 'Rechercher une poussette, un guide, un comparatif…';
+        input.autocomplete = 'off';
+
+        var submit = document.createElement('button');
+        submit.type = 'submit';
+        submit.textContent = 'Rechercher';
+
+        var close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'pb-search-overlay__close';
+        close.setAttribute('aria-label', 'Fermer la recherche');
+        close.appendChild(buildCloseIcon());
+
+        form.appendChild(label);
+        form.appendChild(input);
+        form.appendChild(submit);
+        overlay.appendChild(form);
+        overlay.appendChild(close);
+        document.body.appendChild(overlay);
+
+        function open() {
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            setTimeout(function () { input.focus(); }, 40);
+        }
+        function shut() {
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            btn.focus();
+        }
+
+        btn.addEventListener('click', open);
+        close.addEventListener('click', shut);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) shut(); });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && overlay.getAttribute('aria-hidden') === 'false') shut();
+        });
     }
 
     /* =========================================================
@@ -282,9 +264,8 @@
      * ========================================================= */
     function boot() {
         document.querySelectorAll('[data-pb-slider]').forEach(initSlider);
-        initSearchToggle();
-        initMobileMenu();
         initToc();
+        initSearch();
     }
 
     if (document.readyState === 'loading') {

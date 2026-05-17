@@ -1,9 +1,11 @@
 <?php
 /**
- * Template page statique — Promène Bébé.
+ * Page statique (mentions légales, politique de confidentialité, etc.) —
+ * Promène Bébé.
  *
- * Utilisé pour les pages institutionnelles (mentions légales, politique de
- * confidentialité, divulgation d'affiliation, contact, etc.).
+ * Le parent affiche déjà un page-header (banderole supérieure) automatiquement
+ * via `template-parts/layout/page-header.php` inclus dans header.php. Ici,
+ * on se contente du corps de page, dans le conteneur Kidearn `.blog-one`.
  *
  * @package PromeneBebe
  */
@@ -15,21 +17,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 get_header();
 ?>
 
-<div class="pb-container pb-article-wrap">
-    <?php get_template_part( 'template-parts/breadcrumbs' ); ?>
+<section class="blog-one blog-one--page pb-section">
+    <div class="container">
+        <div class="row gutter-y-60 justify-content-center">
+            <div class="col-xl-10">
 
-    <?php while ( have_posts() ) : the_post(); ?>
-        <article id="post-<?php the_ID(); ?>" <?php post_class( 'pb-article pb-page' ); ?>>
-            <header class="pb-article__header">
-                <h1 class="pb-article__title"><?php the_title(); ?></h1>
-            </header>
+                <?php get_template_part( 'template-parts/breadcrumbs' ); ?>
 
-            <div class="pb-article__body pb-article__body--full">
-                <?php the_content(); ?>
+                <?php while ( have_posts() ) : the_post(); ?>
+                    <article id="post-<?php the_ID(); ?>" <?php post_class( 'blog-details pb-article' ); ?>>
+                        <div class="pb-article__body">
+                            <?php the_content(); ?>
+                        </div>
+                    </article>
+                <?php endwhile; ?>
+
             </div>
-        </article>
-    <?php endwhile; ?>
-</div>
+        </div>
+    </div>
+</section>
 
 <?php
 get_footer();
