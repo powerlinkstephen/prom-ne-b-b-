@@ -1,12 +1,18 @@
 /*!
-Theme Name: Kidearn Child theme
-Theme URI: https://bracketweb.com/kidearnwp/
-Template: kidearn
-Author: Layerdrops
-Author URI: https://themeforest.net/user/Layerdrops
-Description: This is a Child theme for Kidearn WordPress theme.
-Version: 1.0
-License: GNU General Public License v2 or later
-License URI: LICENSE
-Text Domain: kidearn-child
+Theme Name:     Promène Bébé (Kidearn Child)
+Theme URI:      https://promene-bebe.local
+Template:       kidearn
+Author:         Promène Bébé
+Author URI:     https://promene-bebe.local
+Description:    Thème enfant Kidearn personnalisé pour le blog d'affiliation Promène Bébé (poussettes pour bébé). Conserve la structure de Kidearn et applique l'identité visuelle Promène Bébé (palette, typographie, mode sombre, composants).
+Version:        1.0.0
+License:        GNU General Public License v2 or later
+License URI:    LICENSE
+Text Domain:    promenebebe
 */
+
+/*
+ * Les styles personnalisés sont chargés depuis assets/css/main.css
+ * via wp_enqueue_style dans functions.php (meilleure perf et organisation).
+ * Ce fichier ne sert qu'à déclarer le thème enfant auprès de WordPress.
+ */

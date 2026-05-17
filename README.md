@@ -47,20 +47,37 @@ Chemin exact : voir Local > clic-droit sur le site > Reveal in Finder/Show folde
 - Google Analytics 4 : https://analytics.google.com
 - Newsletter : [MailerLite ou Brevo]
 
+## URL locale réelle
+
+L'URL actuelle est `http://localhost:10009` (port géré par Local by Flywheel). À ajuster dans LocalWP si un domaine `.local` propre est souhaité.
+
 ## État d'avancement
 
-Cette section sera complétée par Claude Code au fil du projet.
+Détail complet dans [`docs/04-bmad-progress.md`](docs/04-bmad-progress.md).
 
-- [ ] Phase 1 : Analyse du projet et plan d'action
-- [ ] Phase 2 : Création du thème enfant Kidearn (en local)
-- [ ] Phase 3 : Personnalisation visuelle (palette, typographie, logo)
-- [ ] Phase 4 : Développement de la page d'accueil
-- [ ] Phase 5 : Templates d'articles et fonctionnalités
-- [ ] Phase 6 : Installation et configuration des plugins WordPress
-- [ ] Phase 7 : Rédaction des pages légales
-- [ ] Phase 8 : Tests, optimisations et sécurité (en local)
-- [ ] Phase 9 : Documentation et livraison
+- [x] Phase 1 : Analyse du projet et plan d'action
+- [x] Phase 2 : Création du thème enfant Kidearn (`promene-bebe/app/public/wp-content/themes/kidearn-child/`)
+- [x] Phase 3 : Personnalisation visuelle (palette, typographie Quicksand+Inter, logo, mode sombre)
+- [x] Phase 4 : Développement de la page d'accueil (hero slider + grille articles)
+- [x] Phase 5 : Templates d'articles et fonctionnalités (TOC, breadcrumbs, share, similaires)
+- [ ] Phase 6 : Installation et configuration des plugins WordPress *(commandes prêtes dans [`docs/setup/plugins-install.md`](docs/setup/plugins-install.md), exécution à faire dans la Site shell LocalWP)*
+- [x] Phase 7 : Rédaction des pages légales *(HTML prêt dans [`docs/legal/`](docs/legal/), import via [`docs/setup/import-legal-pages.sh`](docs/setup/import-legal-pages.sh))*
+- [ ] Phase 8 : Tests, optimisations et sécurité — hardening fait, audit PageSpeed à lancer après activation thème
+- [x] Phase 9 : Documentation et livraison ([`docs/`](docs/))
 - [ ] Phase 10 : (Plus tard) Upload sur o2switch
+
+### Actions propriétaire restantes
+
+Voir le tableau "Reste à faire" dans [`docs/04-bmad-progress.md`](docs/04-bmad-progress.md).
+
+Résumé des bloquants :
+1. Activer le thème `kidearn-child` (`wp theme activate kidearn-child`)
+2. Exécuter les commandes de [`docs/setup/wp-cli-commands.md`](docs/setup/wp-cli-commands.md)
+3. Installer les plugins de [`docs/setup/plugins-install.md`](docs/setup/plugins-install.md)
+4. Importer les pages légales : `bash docs/setup/import-legal-pages.sh`
+5. Compléter les `[À COMPLÉTER PAR LE PROPRIÉTAIRE]` dans les 3 pages légales
+6. Fournir un logo SVG et une image `og-default.png` 1200×630
+7. Choisir le service newsletter (MailerLite ou Brevo) et compléter `IDENTIFIANTS.md`
 
 ## Règles importantes pour Claude Code
 
